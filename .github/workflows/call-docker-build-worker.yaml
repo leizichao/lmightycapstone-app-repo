@@ -28,7 +28,7 @@ jobs:
       - name: Prepare security report directory
         run: |
           mkdir -p security-reports
-          chmod -R 777 security-reports
+          chmod 777 security-reports
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
