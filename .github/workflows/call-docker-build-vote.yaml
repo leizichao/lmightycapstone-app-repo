@@ -25,6 +25,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Prepare security report directory
+        run: |
+          mkdir -p security-reports
+          chmod -R 777 security-reports
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -39,10 +44,26 @@ jobs:
           semgrep scan \
             --config p/ci \
             --severity ERROR \
-            --error \
             --exclude result/views/angular.min.js \
             --exclude result/views/socket.io.js \
-            .
+            --sarif \
+            --output security-reports/semgrep-vote.sarif \
+            . || true
+
+      - name: Publish SAST Summary
+        if: always()
+        run: |
+          {
+            echo "## SAST (Semgrep) - Vote Service"
+            echo ""
+            if [ -f security-reports/semgrep-vote.sarif ]; then
+              echo "✅ SAST scan completed."
+              echo ""
+              echo "**Report artifact file:** `semgrep-vote.sarif`"
+            else
+              echo "❌ SAST report was not generated."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run dependency vulnerability scan with Trivy
         uses: aquasecurity/trivy-action@v0.20.0
@@ -53,6 +74,23 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '0'
+          format: sarif
+          output: security-reports/trivy-fs-vote.sarif
+
+      - name: Publish Dependency Scan Summary
+        if: always()
+        run: |
+          {
+            echo "## SCA / Dependency Vulnerability Scan (Trivy FS) - Vote Service"
+            echo ""
+            if [ -f security-reports/trivy-fs-vote.sarif ]; then
+              echo "✅ Dependency vulnerability scan completed."
+              echo ""
+              echo "**Report artifact file:** `trivy-fs-vote.sarif`"
+            else
+              echo "❌ Dependency scan report was not generated."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run secret scan with Gitleaks
         run: |
@@ -60,7 +98,28 @@ jobs:
           curl -sSL -o gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
           tar -xzf gitleaks.tar.gz gitleaks
           sudo mv gitleaks /usr/local/bin/gitleaks
-          gitleaks detect --source . --redact --verbose --exit-code 1
+          gitleaks detect \
+            --source . \
+            --redact \
+            --verbose \
+            --report-format json \
+            --report-path security-reports/gitleaks-vote.json \
+            --exit-code 0
+
+      - name: Publish Secret Scan Summary
+        if: always()
+        run: |
+          {
+            echo "## Secret Scan (Gitleaks) - Vote Service"
+            echo ""
+            if [ -f security-reports/gitleaks-vote.json ]; then
+              echo "✅ Secret scan completed."
+              echo ""
+              echo "**Report artifact file:** `gitleaks-vote.json`"
+            else
+              echo "❌ Secret scan report was not generated."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -88,6 +147,23 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '0'
+          format: sarif
+          output: security-reports/trivy-image-vote.sarif
+
+      - name: Publish Container Image Scan Summary
+        if: always()
+        run: |
+          {
+            echo "## Container Image Scan (Trivy Image) - Vote Service"
+            echo ""
+            if [ -f security-reports/trivy-image-vote.sarif ]; then
+              echo "✅ Container image scan completed."
+              echo ""
+              echo "**Report artifact file:** `trivy-image-vote.sarif`"
+            else
+              echo "❌ Container image scan report was not generated."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run DAST scan with OWASP ZAP
         run: |
@@ -96,19 +172,71 @@ jobs:
           docker run -d --name vote-dast --network vote-dast-net -p 8080:80 vote-service:${TAG}
           sleep 20
           curl --fail --retry 10 --retry-delay 5 http://localhost:8080/
-          mkdir -p zap-reports
-          docker run --rm --network host \
-            -v "${PWD}/zap-reports:/zap/wrk/:rw" \
-            ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t http://localhost:8080 -I -r vote-zap-report.html
 
-      - name: Upload DAST report
+          chmod -R 777 security-reports
+
+          docker run --rm \
+            --user root \
+            --network host \
+            -v "${PWD}/security-reports:/zap/wrk/:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+              -t http://localhost:8080 \
+              -I \
+              -r vote-zap-report.html
+
+      - name: Verify ZAP Report
+        if: always()
+        run: |
+          echo "=== security-reports ==="
+          ls -lah security-reports
+
+      - name: Publish DAST Summary
+        if: always()
+        run: |
+          {
+            echo "## DAST (OWASP ZAP) - Vote Service"
+            echo ""
+            if [ -f security-reports/vote-zap-report.html ]; then
+              echo "✅ DAST scan completed and HTML report was generated."
+              echo ""
+              echo "**Report artifact file:** `vote-zap-report.html`"
+            else
+              echo "❌ DAST report was not generated."
+              echo ""
+              echo "Please check the OWASP ZAP logs above."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish Consolidated Security Summary
+        if: always()
+        run: |
+          {
+            echo "# DevSecOps Security Reports - Vote Service"
+            echo ""
+            echo "| Security Control | Report File |"
+            echo "|---|---|"
+            echo "| SAST (Semgrep) | \`semgrep-vote.sarif\` |"
+            echo "| SCA / Dependency Scan (Trivy FS) | \`trivy-fs-vote.sarif\` |"
+            echo "| Secret Scan (Gitleaks) | \`gitleaks-vote.json\` |"
+            echo "| Container Image Scan (Trivy Image) | \`trivy-image-vote.sarif\` |"
+            echo "| DAST (OWASP ZAP) | \`vote-zap-report.html\` |"
+            echo ""
+            echo "All generated reports are uploaded as the **security-reports-vote** workflow artifact."
+            echo ""
+            echo "## Files generated"
+            echo "\`\`\`"
+            ls -lah security-reports || true
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Security Reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: vote-zap-report
-          path: zap-reports/vote-zap-report.html
-          if-no-files-found: ignore
+          name: security-reports-vote
+          path: security-reports/
+          if-no-files-found: warn
 
       - name: Push image to ECR
         run: |

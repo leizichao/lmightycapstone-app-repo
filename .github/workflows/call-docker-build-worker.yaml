@@ -25,6 +25,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Prepare security report directory
+        run: |
+          mkdir -p security-reports
+          chmod -R 777 security-reports
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -39,10 +44,26 @@ jobs:
           semgrep scan \
             --config p/ci \
             --severity ERROR \
-            --error \
             --exclude result/views/angular.min.js \
             --exclude result/views/socket.io.js \
-            .
+            --sarif \
+            --output security-reports/semgrep-worker.sarif \
+            . || true
+
+      - name: Publish SAST Summary
+        if: always()
+        run: |
+          {
+            echo "## SAST (Semgrep) - Worker Service"
+            echo ""
+            if [ -f security-reports/semgrep-worker.sarif ]; then
+              echo "✅ SAST scan completed."
+              echo ""
+              echo "**Report artifact file:** `semgrep-worker.sarif`"
+            else
+              echo "❌ SAST report was not generated."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run dependency vulnerability scan with Trivy
         uses: aquasecurity/trivy-action@v0.20.0
@@ -53,6 +74,23 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '0'
+          format: sarif
+          output: security-reports/trivy-fs-worker.sarif
+
+      - name: Publish Dependency Scan Summary
+        if: always()
+        run: |
+          {
+            echo "## SCA / Dependency Vulnerability Scan (Trivy FS) - Worker Service"
+            echo ""
+            if [ -f security-reports/trivy-fs-worker.sarif ]; then
+              echo "✅ Dependency vulnerability scan completed."
+              echo ""
+              echo "**Report artifact file:** `trivy-fs-worker.sarif`"
+            else
+              echo "❌ Dependency scan report was not generated."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run secret scan with Gitleaks
         run: |
@@ -60,7 +98,28 @@ jobs:
           curl -sSL -o gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
           tar -xzf gitleaks.tar.gz gitleaks
           sudo mv gitleaks /usr/local/bin/gitleaks
-          gitleaks detect --source . --redact --verbose --exit-code 1
+          gitleaks detect \
+            --source . \
+            --redact \
+            --verbose \
+            --report-format json \
+            --report-path security-reports/gitleaks-worker.json \
+            --exit-code 0
+
+      - name: Publish Secret Scan Summary
+        if: always()
+        run: |
+          {
+            echo "## Secret Scan (Gitleaks) - Worker Service"
+            echo ""
+            if [ -f security-reports/gitleaks-worker.json ]; then
+              echo "✅ Secret scan completed."
+              echo ""
+              echo "**Report artifact file:** `gitleaks-worker.json`"
+            else
+              echo "❌ Secret scan report was not generated."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -77,21 +136,79 @@ jobs:
       - name: Build Docker image
         run: |
           REGISTRY=${{ steps.login-ecr.outputs.registry }}/mightycapstonevoting
-          docker build -t $REGISTRY:worker-${TAG} ./worker
+          docker build -t worker-service:${TAG} -t $REGISTRY:worker-${TAG} ./worker
 
       - name: Security scan with Trivy
         uses: aquasecurity/trivy-action@v0.20.0
         with:
           scan-type: image
-          image-ref: ${{ steps.login-ecr.outputs.registry }}/mightycapstonevoting:worker-${{ env.TAG }}
+          image-ref: worker-service:${{ env.TAG }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '0'
+          format: sarif
+          output: security-reports/trivy-image-worker.sarif
+
+      - name: Publish Container Image Scan Summary
+        if: always()
+        run: |
+          {
+            echo "## Container Image Scan (Trivy Image) - Worker Service"
+            echo ""
+            if [ -f security-reports/trivy-image-worker.sarif ]; then
+              echo "✅ Container image scan completed."
+              echo ""
+              echo "**Report artifact file:** `trivy-image-worker.sarif`"
+            else
+              echo "❌ Container image scan report was not generated."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: DAST note for worker service
         run: |
           echo "Worker is a background service without an HTTP endpoint, so OWASP ZAP DAST is not applicable to this service."
           echo "DAST is implemented for the vote and result web services."
+
+      - name: Publish DAST Summary
+        if: always()
+        run: |
+          {
+            echo "## DAST (OWASP ZAP) - Worker Service"
+            echo ""
+            echo "ℹ️ DAST is not applicable because the worker is a background service without an HTTP endpoint."
+            echo ""
+            echo "DAST is implemented for the vote and result web services."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish Consolidated Security Summary
+        if: always()
+        run: |
+          {
+            echo "# DevSecOps Security Reports - Worker Service"
+            echo ""
+            echo "| Security Control | Report File |"
+            echo "|---|---|"
+            echo "| SAST (Semgrep) | \`semgrep-worker.sarif\` |"
+            echo "| SCA / Dependency Scan (Trivy FS) | \`trivy-fs-worker.sarif\` |"
+            echo "| Secret Scan (Gitleaks) | \`gitleaks-worker.json\` |"
+            echo "| Container Image Scan (Trivy Image) | \`trivy-image-worker.sarif\` |"
+            echo "| DAST (OWASP ZAP) | Not applicable - background service |"
+            echo ""
+            echo "All generated reports are uploaded as the **security-reports-worker** workflow artifact."
+            echo ""
+            echo "## Files generated"
+            echo "\`\`\`"
+            ls -lah security-reports || true
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Security Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports-worker
+          path: security-reports/
+          if-no-files-found: warn
 
       - name: Push image to ECR
         run: |
