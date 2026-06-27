@@ -118,7 +118,7 @@ jobs:
             if [ -f security-reports/semgrep-result.sarif ]; then
               echo "✅ SAST scan completed."
               echo ""
-              echo "**Report artifact files:** `semgrep-result.sarif`, `semgrep-result.html`"
+              echo "**Report artifact files:** semgrep-result.sarif, semgrep-result.html"
             else
               echo "❌ SAST report was not generated."
             fi
@@ -204,7 +204,7 @@ jobs:
             if [ -f security-reports/trivy-fs-result.sarif ]; then
               echo "✅ Dependency vulnerability scan completed."
               echo ""
-              echo "**Report artifact files:** `trivy-fs-result.sarif`, `trivy-fs-result.html`"
+              echo "**Report artifact files:** trivy-fs-result.sarif, trivy-fs-result.html"
             else
               echo "❌ Dependency scan report was not generated."
             fi
@@ -282,7 +282,7 @@ jobs:
             if [ -f security-reports/gitleaks-result.json ]; then
               echo "✅ Secret scan completed."
               echo ""
-              echo "**Report artifact files:** `gitleaks-result.json`, `gitleaks-result.html`"
+              echo "**Report artifact files:** gitleaks-result.json, gitleaks-result.html"
             else
               echo "❌ Secret scan report was not generated."
             fi
@@ -384,7 +384,7 @@ jobs:
             if [ -f security-reports/trivy-image-result.sarif ]; then
               echo "✅ Container image scan completed."
               echo ""
-              echo "**Report artifact files:** `trivy-image-result.sarif`, `trivy-image-result.html`"
+              echo "**Report artifact files:** trivy-image-result.sarif, trivy-image-result.html"
             else
               echo "❌ Container image scan report was not generated."
             fi
@@ -443,7 +443,7 @@ jobs:
             if [ -f security-reports/result-zap-report.html ]; then
               echo "✅ DAST scan completed and HTML report was generated."
               echo ""
-              echo "**Report artifact file:** `result-zap-report.html`"
+              echo "**Report artifact file:** result-zap-report.html"
             else
               echo "❌ DAST report was not generated."
               echo ""
@@ -459,18 +459,18 @@ jobs:
             echo ""
             echo "| Security Control | Report File |"
             echo "|---|---|"
-            echo "| SAST (Semgrep) | \`semgrep-result.sarif\`, \`semgrep-result.html\` |"
-            echo "| SCA / Dependency Scan (Trivy FS) | \`trivy-fs-result.sarif\`, \`trivy-fs-result.html\` |"
-            echo "| Secret Scan (Gitleaks) | \`gitleaks-result.json\`, \`gitleaks-result.html\` |"
-            echo "| Container Image Scan (Trivy Image) | \`trivy-image-result.sarif\`, \`trivy-image-result.html\` |"
-            echo "| DAST (OWASP ZAP) | \`result-zap-report.html\` |"
+            echo "| SAST (Semgrep) | semgrep-result.sarif, semgrep-result.html |"
+            echo "| SCA / Dependency Scan (Trivy FS) | trivy-fs-result.sarif, trivy-fs-result.html |"
+            echo "| Secret Scan (Gitleaks) | gitleaks-result.json, gitleaks-result.html |"
+            echo "| Container Image Scan (Trivy Image) | trivy-image-result.sarif, trivy-image-result.html |"
+            echo "| DAST (OWASP ZAP) | result-zap-report.html |"
             echo ""
             echo "Human-readable HTML reports and machine-readable SARIF/JSON reports are uploaded as the **security-reports-result** workflow artifact."
             echo ""
             echo "## Files generated"
-            echo "\`\`\`"
+            echo ""
             ls -lah security-reports || true
-            echo "\`\`\`"
+            echo ""
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Security Reports

@@ -118,7 +118,7 @@ jobs:
             if [ -f security-reports/semgrep-vote.sarif ]; then
               echo "✅ SAST scan completed."
               echo ""
-              echo "**Report artifact files:** `semgrep-vote.sarif`, `semgrep-vote.html`"
+              echo "**Report artifact files:** semgrep-vote.sarif, semgrep-vote.html"
             else
               echo "❌ SAST report was not generated."
             fi
@@ -204,7 +204,7 @@ jobs:
             if [ -f security-reports/trivy-fs-vote.sarif ]; then
               echo "✅ Dependency vulnerability scan completed."
               echo ""
-              echo "**Report artifact files:** `trivy-fs-vote.sarif`, `trivy-fs-vote.html`"
+              echo "**Report artifact files:** trivy-fs-vote.sarif, trivy-fs-vote.html"
             else
               echo "❌ Dependency scan report was not generated."
             fi
@@ -282,7 +282,7 @@ jobs:
             if [ -f security-reports/gitleaks-vote.json ]; then
               echo "✅ Secret scan completed."
               echo ""
-              echo "**Report artifact files:** `gitleaks-vote.json`, `gitleaks-vote.html`"
+              echo "**Report artifact files:** gitleaks-vote.json, gitleaks-vote.html"
             else
               echo "❌ Secret scan report was not generated."
             fi
@@ -385,7 +385,7 @@ jobs:
             if [ -f security-reports/trivy-image-vote.sarif ]; then
               echo "✅ Container image scan completed."
               echo ""
-              echo "**Report artifact files:** `trivy-image-vote.sarif`, `trivy-image-vote.html`"
+              echo "**Report artifact files:** trivy-image-vote.sarif, trivy-image-vote.html"
             else
               echo "❌ Container image scan report was not generated."
             fi
@@ -440,7 +440,7 @@ jobs:
             if [ -f security-reports/vote-zap-report.html ]; then
               echo "✅ DAST scan completed and HTML report was generated."
               echo ""
-              echo "**Report artifact file:** `vote-zap-report.html`"
+              echo "**Report artifact file:** vote-zap-report.html"
             else
               echo "❌ DAST report was not generated."
               echo ""
@@ -456,18 +456,18 @@ jobs:
             echo ""
             echo "| Security Control | Report File |"
             echo "|---|---|"
-            echo "| SAST (Semgrep) | \`semgrep-vote.sarif\`, \`semgrep-vote.html\` |"
-            echo "| SCA / Dependency Scan (Trivy FS) | \`trivy-fs-vote.sarif\`, \`trivy-fs-vote.html\` |"
-            echo "| Secret Scan (Gitleaks) | \`gitleaks-vote.json\`, \`gitleaks-vote.html\` |"
-            echo "| Container Image Scan (Trivy Image) | \`trivy-image-vote.sarif\`, \`trivy-image-vote.html\` |"
-            echo "| DAST (OWASP ZAP) | \`vote-zap-report.html\` |"
+            echo "| SAST (Semgrep) | semgrep-vote.sarif, semgrep-vote.html |"
+            echo "| SCA / Dependency Scan (Trivy FS) | trivy-fs-vote.sarif, trivy-fs-vote.html |"
+            echo "| Secret Scan (Gitleaks) | gitleaks-vote.json, gitleaks-vote.html |"
+            echo "| Container Image Scan (Trivy Image) | trivy-image-vote.sarif, trivy-image-vote.html |"
+            echo "| DAST (OWASP ZAP) | vote-zap-report.html |"
             echo ""
             echo "Human-readable HTML reports and machine-readable SARIF/JSON reports are uploaded as the **security-reports-vote** workflow artifact."
             echo ""
             echo "## Files generated"
-            echo "\`\`\`"
+            echo ""
             ls -lah security-reports || true
-            echo "\`\`\`"
+            echo ""
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Security Reports

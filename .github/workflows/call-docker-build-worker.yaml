@@ -118,7 +118,7 @@ jobs:
             if [ -f security-reports/semgrep-worker.sarif ]; then
               echo "✅ SAST scan completed."
               echo ""
-              echo "**Report artifact files:** `semgrep-worker.sarif`, `semgrep-worker.html`"
+              echo "**Report artifact files:** semgrep-worker.sarif, semgrep-worker.html"
             else
               echo "❌ SAST report was not generated."
             fi
@@ -204,7 +204,7 @@ jobs:
             if [ -f security-reports/trivy-fs-worker.sarif ]; then
               echo "✅ Dependency vulnerability scan completed."
               echo ""
-              echo "**Report artifact files:** `trivy-fs-worker.sarif`, `trivy-fs-worker.html`"
+              echo "**Report artifact files:** trivy-fs-worker.sarif, trivy-fs-worker.html"
             else
               echo "❌ Dependency scan report was not generated."
             fi
@@ -282,7 +282,7 @@ jobs:
             if [ -f security-reports/gitleaks-worker.json ]; then
               echo "✅ Secret scan completed."
               echo ""
-              echo "**Report artifact files:** `gitleaks-worker.json`, `gitleaks-worker.html`"
+              echo "**Report artifact files:** gitleaks-worker.json, gitleaks-worker.html"
             else
               echo "❌ Secret scan report was not generated."
             fi
@@ -384,7 +384,7 @@ jobs:
             if [ -f security-reports/trivy-image-worker.sarif ]; then
               echo "✅ Container image scan completed."
               echo ""
-              echo "**Report artifact files:** `trivy-image-worker.sarif`, `trivy-image-worker.html`"
+              echo "**Report artifact files:** trivy-image-worker.sarif, trivy-image-worker.html"
             else
               echo "❌ Container image scan report was not generated."
             fi
@@ -414,18 +414,18 @@ jobs:
             echo ""
             echo "| Security Control | Report File |"
             echo "|---|---|"
-            echo "| SAST (Semgrep) | \`semgrep-worker.sarif\`, \`semgrep-worker.html\` |"
-            echo "| SCA / Dependency Scan (Trivy FS) | \`trivy-fs-worker.sarif\`, \`trivy-fs-worker.html\` |"
-            echo "| Secret Scan (Gitleaks) | \`gitleaks-worker.json\`, \`gitleaks-worker.html\` |"
-            echo "| Container Image Scan (Trivy Image) | \`trivy-image-worker.sarif\`, \`trivy-image-worker.html\` |"
+            echo "| SAST (Semgrep) | semgrep-worker.sarif, semgrep-worker.html |"
+            echo "| SCA / Dependency Scan (Trivy FS) | trivy-fs-worker.sarif, trivy-fs-worker.html |"
+            echo "| Secret Scan (Gitleaks) | gitleaks-worker.json, gitleaks-worker.html |"
+            echo "| Container Image Scan (Trivy Image) | trivy-image-worker.sarif, trivy-image-worker.html |"
             echo "| DAST (OWASP ZAP) | Not applicable - background service |"
             echo ""
             echo "Human-readable HTML reports and machine-readable SARIF/JSON reports are uploaded as the **security-reports-worker** workflow artifact."
             echo ""
             echo "## Files generated"
-            echo "\`\`\`"
+            echo ""
             ls -lah security-reports || true
-            echo "\`\`\`"
+            echo ""
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Security Reports
